@@ -163,18 +163,6 @@ class Player:
             self.rect
         )
 
-        if self.has_key:
-
-            pygame.draw.circle(
-                screen,
-                (220, 220, 60),
-                (
-                    self.rect.right - 6,
-                    self.rect.top + 6
-                ),
-                5
-            )
-
 
 # =============================================================
 # TASK 2: ENEMY GUARD
@@ -263,7 +251,7 @@ class Guard:
 
 
 WIDTH = COLS * TILE
-HEIGHT = ROWS * TILE + 50
+HEIGHT = ROWS * TILE + 80
 
 FPS = 60
 
@@ -286,7 +274,12 @@ class GameEngine:
 
         self.font = pygame.font.SysFont(
             "monospace",
-            24
+            22
+        )
+
+        self.small_font = pygame.font.SysFont(
+            "monospace",
+            16
         )
 
         self.big_font = pygame.font.SysFont(
@@ -484,7 +477,7 @@ class GameEngine:
                 return
 
             # =================================================
-            # KEY
+            # KEY PICKUP
             # =================================================
 
             if cell == KEY:
@@ -513,7 +506,7 @@ class GameEngine:
                 )
 
     # =========================================================
-    # TASK 3: DRAW MINI-MAP
+    # TASK 3: MINI-MAP
     # =========================================================
 
     def draw_minimap(self):
@@ -521,10 +514,14 @@ class GameEngine:
         map_width = COLS * MINIMAP_TILE
         map_height = ROWS * MINIMAP_TILE
 
-        map_x = WIDTH - map_width - MINIMAP_MARGIN
+        map_x = (
+            WIDTH
+            - map_width
+            - MINIMAP_MARGIN
+        )
+
         map_y = MINIMAP_MARGIN
 
-        # Background
         background = pygame.Rect(
             map_x - 4,
             map_y - 4,
@@ -538,7 +535,6 @@ class GameEngine:
             background
         )
 
-        # Draw dungeon grid
         for r in range(ROWS):
 
             for c in range(COLS):
@@ -582,10 +578,7 @@ class GameEngine:
                     mini_rect
                 )
 
-        # =====================================================
-        # PLAYER POSITION ON MINI-MAP
-        # =====================================================
-
+        # Player marker
         player_col = (
             self.player.rect.centerx // TILE
         )
@@ -621,10 +614,7 @@ class GameEngine:
                 3
             )
 
-        # =====================================================
-        # GUARD POSITION ON MINI-MAP
-        # =====================================================
-
+        # Guard marker
         if self.guard is not None:
 
             guard_col = (
@@ -662,7 +652,6 @@ class GameEngine:
                     3
                 )
 
-        # Mini-map border
         pygame.draw.rect(
             self.screen,
             (230, 230, 230),
@@ -670,7 +659,6 @@ class GameEngine:
             1
         )
 
-        # Mini-map title
         label = pygame.font.SysFont(
             "monospace",
             12,
@@ -685,9 +673,117 @@ class GameEngine:
             label,
             (
                 map_x,
-                map_y + map_height + 5
+                map_y + map_height + 4
             )
         )
+
+    # =========================================================
+    # TASK 4: INVENTORY UI
+    # =========================================================
+
+    def draw_inventory(self):
+
+        inventory_x = 10
+        inventory_y = ROWS * TILE + 8
+
+        slot_size = 44
+
+        # Inventory label
+        label = self.small_font.render(
+            "INVENTORY",
+            True,
+            (220, 220, 220)
+        )
+
+        self.screen.blit(
+            label,
+            (
+                inventory_x,
+                inventory_y
+            )
+        )
+
+        # Empty inventory slot
+        slot_x = inventory_x + 105
+        slot_y = inventory_y - 4
+
+        slot = pygame.Rect(
+            slot_x,
+            slot_y,
+            slot_size,
+            slot_size
+        )
+
+        pygame.draw.rect(
+            self.screen,
+            (45, 45, 60),
+            slot,
+            border_radius=5
+        )
+
+        pygame.draw.rect(
+            self.screen,
+            (150, 150, 165),
+            slot,
+            2,
+            border_radius=5
+        )
+
+        # =====================================================
+        # SHOW KEY AFTER PICKUP
+        # =====================================================
+
+        if self.player.has_key:
+
+            center_x = slot.centerx
+            center_y = slot.centery
+
+            # Key ring
+            pygame.draw.circle(
+                self.screen,
+                (255, 220, 60),
+                (
+                    center_x - 7,
+                    center_y - 5
+                ),
+                7,
+                3
+            )
+
+            # Key shaft
+            pygame.draw.rect(
+                self.screen,
+                (255, 220, 60),
+                (
+                    center_x - 1,
+                    center_y - 3,
+                    15,
+                    6
+                )
+            )
+
+            # Key teeth
+            pygame.draw.rect(
+                self.screen,
+                (255, 220, 60),
+                (
+                    center_x + 8,
+                    center_y + 2,
+                    4,
+                    6
+                )
+            )
+
+            pygame.draw.rect(
+                self.screen,
+                (255, 220, 60),
+                (
+                    center_x + 3,
+                    center_y + 2,
+                    4,
+                    4
+                )
+            )
 
     def draw(self):
 
@@ -791,7 +887,7 @@ class GameEngine:
         )
 
         # =====================================================
-        # TASK 3: MINI-MAP
+        # MINI-MAP
         # =====================================================
 
         self.draw_minimap()
@@ -804,7 +900,7 @@ class GameEngine:
             0,
             ROWS * TILE,
             WIDTH,
-            50
+            80
         )
 
         pygame.draw.rect(
@@ -813,8 +909,9 @@ class GameEngine:
             hud
         )
 
+        # Status message
         st = self.font.render(
-            self.status + "  |  R=Restart",
+            self.status,
             True,
             (200, 200, 200)
         )
@@ -823,9 +920,30 @@ class GameEngine:
             st,
             (
                 8,
-                ROWS * TILE + 13
+                ROWS * TILE + 50
             )
         )
+
+        # Restart text
+        restart_text = self.small_font.render(
+            "R = Restart",
+            True,
+            (150, 150, 150)
+        )
+
+        self.screen.blit(
+            restart_text,
+            (
+                WIDTH - 110,
+                ROWS * TILE + 58
+            )
+        )
+
+        # =====================================================
+        # TASK 4: INVENTORY
+        # =====================================================
+
+        self.draw_inventory()
 
         # =====================================================
         # WIN SCREEN
