@@ -9,6 +9,13 @@ WALL, FLOOR, CHEST, KEY, TRAP, GUARD = 0, 1, 2, 3, 4, 5
 SPEED = 3
 GUARD_SPEED = 2
 
+# =============================================================
+# MINI-MAP SETTINGS
+# =============================================================
+
+MINIMAP_TILE = 8
+MINIMAP_MARGIN = 10
+
 
 def generate_world():
     grid = [[WALL] * COLS for _ in range(ROWS)]
@@ -53,10 +60,7 @@ def generate_world():
     if len(rooms) >= 2:
         cr, ck = rooms[-1], rooms[-2]
 
-        # Place chest
         grid[cr.centery][cr.centerx] = CHEST
-
-        # Place key
         grid[ck.centery][ck.centerx] = KEY
 
     start = rooms[0] if rooms else None
@@ -70,11 +74,9 @@ def generate_world():
     for r in range(ROWS):
         for c in range(COLS):
 
-            # Only place traps on normal floor tiles
             if grid[r][c] != FLOOR:
                 continue
 
-            # Avoid placing traps inside the starting room
             if start and start.collidepoint(c, r):
                 continue
 
@@ -161,7 +163,6 @@ class Player:
             self.rect
         )
 
-        # Show key in player's inventory
         if self.has_key:
 
             pygame.draw.circle(
@@ -223,7 +224,6 @@ class Guard:
 
     def draw(self, screen):
 
-        # Guard body
         pygame.draw.rect(
             screen,
             self.color,
@@ -231,7 +231,6 @@ class Guard:
             border_radius=6
         )
 
-        # Guard head
         pygame.draw.circle(
             screen,
             (230, 180, 150),
@@ -242,7 +241,6 @@ class Guard:
             6
         )
 
-        # Eyes
         pygame.draw.circle(
             screen,
             (20, 20, 20),
@@ -266,6 +264,7 @@ class Guard:
 
 WIDTH = COLS * TILE
 HEIGHT = ROWS * TILE + 50
+
 FPS = 60
 
 
@@ -312,7 +311,6 @@ class GameEngine:
             sx = TILE + 6
             sy = TILE + 6
 
-        # Starting position
         self.start_position = (
             sx,
             sy
@@ -324,7 +322,7 @@ class GameEngine:
         )
 
         # =====================================================
-        # TASK 2: FIND CHEST AND CREATE GUARD NEAR IT
+        # TASK 2: CREATE GUARD NEAR CHEST
         # =====================================================
 
         chest_position = None
@@ -347,9 +345,6 @@ class GameEngine:
 
             chest_c, chest_r = chest_position
 
-            # Find floor tiles in the same row as the chest.
-            # This makes sure the guard patrols on a valid path.
-
             patrol_tiles = []
 
             for c in range(COLS):
@@ -360,13 +355,6 @@ class GameEngine:
 
             if patrol_tiles:
 
-                # Find the floor tile closest to the chest
-                guard_c = min(
-                    patrol_tiles,
-                    key=lambda c: abs(c - chest_c)
-                )
-
-                # Create patrol area around the chest
                 patrol_left = max(
                     min(patrol_tiles),
                     chest_c - 3
@@ -377,9 +365,9 @@ class GameEngine:
                     chest_c + 3
                 )
 
-                # Make sure the patrol range is valid
                 valid_patrol = [
-                    c for c in patrol_tiles
+                    c
+                    for c in patrol_tiles
                     if patrol_left <= c <= patrol_right
                 ]
 
@@ -437,10 +425,6 @@ class GameEngine:
         if self.won:
             return
 
-        # =====================================================
-        # PLAYER MOVEMENT
-        # =====================================================
-
         keys = pygame.key.get_pressed()
 
         self.player.move(
@@ -458,12 +442,10 @@ class GameEngine:
 
             self.guard.update()
 
-            # Check if player touches guard
             if self.player.rect.colliderect(
                 self.guard.rect
             ):
 
-                # Reset player to starting position
                 self.player.rect.topleft = (
                     self.start_position
                 )
@@ -475,7 +457,7 @@ class GameEngine:
                 return
 
         # =====================================================
-        # FIND PLAYER'S CURRENT TILE
+        # PLAYER TILE
         # =====================================================
 
         pr = self.player.rect.centery // TILE
@@ -486,7 +468,7 @@ class GameEngine:
             cell = self.grid[pr][pc]
 
             # =================================================
-            # TASK 1: TRAP COLLISION
+            # TASK 1: TRAP
             # =================================================
 
             if cell == TRAP:
@@ -530,6 +512,183 @@ class GameEngine:
                     "Treasure found!"
                 )
 
+    # =========================================================
+    # TASK 3: DRAW MINI-MAP
+    # =========================================================
+
+    def draw_minimap(self):
+
+        map_width = COLS * MINIMAP_TILE
+        map_height = ROWS * MINIMAP_TILE
+
+        map_x = WIDTH - map_width - MINIMAP_MARGIN
+        map_y = MINIMAP_MARGIN
+
+        # Background
+        background = pygame.Rect(
+            map_x - 4,
+            map_y - 4,
+            map_width + 8,
+            map_height + 8
+        )
+
+        pygame.draw.rect(
+            self.screen,
+            (15, 15, 25),
+            background
+        )
+
+        # Draw dungeon grid
+        for r in range(ROWS):
+
+            for c in range(COLS):
+
+                cell = self.grid[r][c]
+
+                mini_rect = pygame.Rect(
+                    map_x + c * MINIMAP_TILE,
+                    map_y + r * MINIMAP_TILE,
+                    MINIMAP_TILE,
+                    MINIMAP_TILE
+                )
+
+                if cell == WALL:
+
+                    color = (35, 30, 45)
+
+                elif cell == FLOOR:
+
+                    color = (180, 170, 150)
+
+                elif cell == CHEST:
+
+                    color = (200, 150, 20)
+
+                elif cell == KEY:
+
+                    color = (230, 220, 50)
+
+                elif cell == TRAP:
+
+                    color = (180, 50, 50)
+
+                else:
+
+                    color = (35, 30, 45)
+
+                pygame.draw.rect(
+                    self.screen,
+                    color,
+                    mini_rect
+                )
+
+        # =====================================================
+        # PLAYER POSITION ON MINI-MAP
+        # =====================================================
+
+        player_col = (
+            self.player.rect.centerx // TILE
+        )
+
+        player_row = (
+            self.player.rect.centery // TILE
+        )
+
+        if (
+            0 <= player_col < COLS
+            and 0 <= player_row < ROWS
+        ):
+
+            player_x = (
+                map_x
+                + player_col * MINIMAP_TILE
+                + MINIMAP_TILE // 2
+            )
+
+            player_y = (
+                map_y
+                + player_row * MINIMAP_TILE
+                + MINIMAP_TILE // 2
+            )
+
+            pygame.draw.circle(
+                self.screen,
+                (50, 130, 255),
+                (
+                    player_x,
+                    player_y
+                ),
+                3
+            )
+
+        # =====================================================
+        # GUARD POSITION ON MINI-MAP
+        # =====================================================
+
+        if self.guard is not None:
+
+            guard_col = (
+                self.guard.rect.centerx // TILE
+            )
+
+            guard_row = (
+                self.guard.rect.centery // TILE
+            )
+
+            if (
+                0 <= guard_col < COLS
+                and 0 <= guard_row < ROWS
+            ):
+
+                guard_x = (
+                    map_x
+                    + guard_col * MINIMAP_TILE
+                    + MINIMAP_TILE // 2
+                )
+
+                guard_y = (
+                    map_y
+                    + guard_row * MINIMAP_TILE
+                    + MINIMAP_TILE // 2
+                )
+
+                pygame.draw.circle(
+                    self.screen,
+                    (255, 60, 60),
+                    (
+                        guard_x,
+                        guard_y
+                    ),
+                    3
+                )
+
+        # Mini-map border
+        pygame.draw.rect(
+            self.screen,
+            (230, 230, 230),
+            background,
+            1
+        )
+
+        # Mini-map title
+        label = pygame.font.SysFont(
+            "monospace",
+            12,
+            bold=True
+        ).render(
+            "MAP",
+            True,
+            (255, 255, 255)
+        )
+
+        self.screen.blit(
+            label,
+            (
+                map_x,
+                map_y + map_height + 5
+            )
+        )
+
     def draw(self):
 
         self.screen.fill(
@@ -537,7 +696,7 @@ class GameEngine:
         )
 
         # =====================================================
-        # DRAW DUNGEON
+        # DRAW MAIN DUNGEON
         # =====================================================
 
         for r in range(ROWS):
@@ -559,10 +718,7 @@ class GameEngine:
                     rect
                 )
 
-                # =================================================
                 # KEY
-                # =================================================
-
                 if cell == KEY:
 
                     pygame.draw.circle(
@@ -575,10 +731,7 @@ class GameEngine:
                         10
                     )
 
-                # =================================================
                 # CHEST
-                # =================================================
-
                 elif cell == CHEST:
 
                     pygame.draw.rect(
@@ -588,10 +741,7 @@ class GameEngine:
                         border_radius=4
                     )
 
-                # =================================================
-                # TASK 1: TRAP
-                # =================================================
-
+                # TRAP
                 elif cell == TRAP:
 
                     trap_rect = rect.inflate(
@@ -623,7 +773,7 @@ class GameEngine:
                     )
 
         # =====================================================
-        # TASK 2: DRAW GUARD
+        # GUARD
         # =====================================================
 
         if self.guard is not None:
@@ -633,12 +783,18 @@ class GameEngine:
             )
 
         # =====================================================
-        # DRAW PLAYER
+        # PLAYER
         # =====================================================
 
         self.player.draw(
             self.screen
         )
+
+        # =====================================================
+        # TASK 3: MINI-MAP
+        # =====================================================
+
+        self.draw_minimap()
 
         # =====================================================
         # HUD
