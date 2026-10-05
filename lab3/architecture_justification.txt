@@ -1,0 +1,13 @@
+LAB 3: COMPONENT MODELLING & ARCHITECTURAL PATTERN SELECTION
+
+Scenario: Self-Service Coffee Kiosk System
+
+Architecture Selection: Layered Architecture
+
+Reason 1: Layered architecture separates the presentation layer, business logic, and data storage. The presentation layer handles touchscreen interactions, while the business layer manages orders and payments.
+
+Reason 2: The architecture supports the kiosk's requirements, including menu and pricing storage, credit card payments, and receipt printing. Clear interfaces make the system easier to maintain.
+
+Security Advantage: A dedicated Payment Service provides a separate boundary for payment processing. Sensitive card details should not be stored unnecessarily.
+
+Performance Benefit: The components communicate through defined interfaces, making the ordering workflow straightforward and reducing unnecessary dependencies.
