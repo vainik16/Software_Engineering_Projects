@@ -1,0 +1,33 @@
+
+@startuml
+title Self-Service Coffee Kiosk - Layered Architecture
+
+package "Presentation Layer" {
+  component "User Interface\nComponent" as UI
+}
+
+package "Business Layer" {
+  component "Order Manager\nComponent" as Order
+  component "Payment Service\nComponent" as Payment
+}
+
+package "Data and Hardware Layer" {
+  component "Menu & Pricing\nDatabase" as DB
+  component "Receipt Printer\nComponent" as Printer
+}
+
+cloud "Credit Card Terminal" as Card
+
+UI --> Order : Order API
+Order --> Payment : Payment request
+Order --> DB : Menu and price queries
+Order --> Printer : Print receipt
+Payment --> Card : Card authorization
+
+note bottom of Order
+  Validates coffee type and size
+  Espresso, Americano, Latte
+  Small or Large
+end note
+
+@enduml
